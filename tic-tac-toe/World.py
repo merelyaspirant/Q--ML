@@ -1,5 +1,7 @@
+import threading
 from Tkinter import Tk, Button
 from tkFont import Font
+from time import sleep
 
 class Board:
 
@@ -9,14 +11,12 @@ class Board:
     self.empty = '.'
     self.size = 3
     self.fields = {}
-    for y in range(self.size):
-      for x in range(self.size):
+    for x in range(self.size):
+      for y in range(self.size):
         self.fields[x,y] = self.empty
 
-  def move(self,x,y):
-#    board = Board(self)
-    self.fields[x,y] = self.player
-    (self.player,self.opponent) = (self.opponent,self.player)
+  def move(self,turn, x,y):
+    self.fields[x,y] = turn
     return self
 
   def tied(self):
@@ -25,46 +25,52 @@ class Board:
         return False
     return True
 
-  def won(self):
+  def won(self, turn):
     # horizontal
-    for y in range(self.size):
-      winning = []
-      for x in range(self.size):
-        if self.fields[x,y] == self.opponent:
-          winning.append((x,y))
-      if len(winning) == self.size:
-        return winning
-    # vertical
     for x in range(self.size):
       winning = []
       for y in range(self.size):
-        if self.fields[x,y] == self.opponent:
+        if self.fields[x,y] == turn:
           winning.append((x,y))
       if len(winning) == self.size:
+        print "win horizontal\n"
+        return winning
+    # vertical
+    for y in range(self.size):
+      winning = []
+      for x in range(self.size):
+        if self.fields[x,y] == turn:
+          winning.append((x,y))
+      if len(winning) == self.size:
+        print "win vertical"
         return winning
     # diagonal
     winning = []
-    for y in range(self.size):
-      x = y
-      if self.fields[x,y] == self.opponent:
+    for x in range(self.size):
+      y = x
+      if self.fields[x,y] == turn:
         winning.append((x,y))
     if len(winning) == self.size:
+      print "win 1 diagonal"
+      print winning
       return winning
     # other diagonal
     winning = []
-    for y in range(self.size):
-      x = self.size-1-y
-      if self.fields[x,y] == self.opponent:
+    for x in range(self.size):
+      y = self.size-1-x
+      if self.fields[x,y] == turn:
         winning.append((x,y))
     if len(winning) == self.size:
+      print "win 2 diagonal\n"
       return winning
     # default
     return None
 
 class GUI:
 
-  def __init__(self):
+  def __init__(self, todo):
     self.app = Tk()
+    self.todo = todo
     self.app.title('TicTacToe')
     self.app.resizable(width=False, height=False)
     self.board = Board()
@@ -73,29 +79,25 @@ class GUI:
     for x,y in self.board.fields:
       handler = lambda x=x,y=y: self.move(x,y)
       button = Button(self.app, command=handler, font=self.font, width=2, height=1)
-      button.grid(row=y, column=x)
+      button.grid(row=x, column=y)
       self.buttons[x,y] = button
     handler = lambda: self.reset()
     button = Button(self.app, text='reset', command=handler)
     button.grid(row=self.board.size+1, column=0, columnspan=self.board.size, sticky="WE")
-    self.update()
+    turn = 'X'
+    self.update(turn)
 
   def reset(self):
     self.board = Board()
-    self.update()
+    turn = 'X'
+    self.update(turn)
 
-  def move(self,x,y):
-    self.app.config(cursor="watch")
-    self.app.update()
-    self.board = self.board.move(x,y)
-    self.update()
-#    move = self.board.best()
-#    if move:
-#      self.board = self.board.move(*move)
-#      self.update()
-    self.app.config(cursor="")
+  def move(self,turn,x,y):
+    self.board.move(turn,x,y)
+    res = self.update(turn)
+    return res
 
-  def update(self):
+  def update(self, turn):
     for (x,y) in self.board.fields:
       text = self.board.fields[x,y]
       self.buttons[x,y]['text'] = text
@@ -104,48 +106,27 @@ class GUI:
         self.buttons[x,y]['state'] = 'normal'
       else:
         self.buttons[x,y]['state'] = 'disabled'
-    winning = self.board.won()
+
+    winning = self.board.won(turn)
     if winning:
+
       for x,y in winning:
         self.buttons[x,y]['disabledforeground'] = 'red'
       for x,y in self.buttons:
         self.buttons[x,y]['state'] = 'disabled'
-    for (x,y) in self.board.fields:
-      self.buttons[x,y].update()
+      for (x,y) in self.board.fields:
+        self.buttons[x,y].update()
+        self.reset()
+        return 'won'
+
+    elif self.board.tied():
+      self.reset()
+      return 'tied'
+
+    return 'done'
+    
 
   def mainloop(self):
     self.app.mainloop()
-
-#if __name__ == '__main__':
-#  GUI().mainloop()
-
-def play():
-  print "Play\n"
-  g = GUI('play')
-  g.mainloop()
-  x = int(raw_input())
-  y = int(raw_input())
-  g.move(x,y)
-
-def train():
-  g = GUI('train')
-  g.mainloop()
-  print "Train\n"
-
-if __name__ == '__main__':
-
-  print "Enter 't' to train & 'r' to play"
-  ch = str(raw_input('-->\n'))
-  if ch == 't':
-    train()
-    print "Model Trained\n"
-    if 'yes' in str(raw_input("Enter 'yes' to play\n")):
-  	  play()
-    else:
-      sys.exit()
-  elif ch == 'r':
-    play()
-  else:
-    sys.exit()
 
 

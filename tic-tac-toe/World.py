@@ -33,7 +33,7 @@ class Board:
         if self.fields[x,y] == turn:
           winning.append((x,y))
       if len(winning) == self.size:
-        print "win horizontal\n"
+#        print "win horizontal\n"
         return winning
     # vertical
     for y in range(self.size):
@@ -42,7 +42,7 @@ class Board:
         if self.fields[x,y] == turn:
           winning.append((x,y))
       if len(winning) == self.size:
-        print "win vertical"
+#        print "win vertical"
         return winning
     # diagonal
     winning = []
@@ -51,8 +51,8 @@ class Board:
       if self.fields[x,y] == turn:
         winning.append((x,y))
     if len(winning) == self.size:
-      print "win 1 diagonal"
-      print winning
+#      print "win 1 diagonal"
+#      print winning
       return winning
     # other diagonal
     winning = []
@@ -61,7 +61,7 @@ class Board:
       if self.fields[x,y] == turn:
         winning.append((x,y))
     if len(winning) == self.size:
-      print "win 2 diagonal\n"
+#      print "win 2 diagonal\n"
       return winning
     # default
     return None
@@ -116,8 +116,8 @@ class GUI:
         self.buttons[x,y]['state'] = 'disabled'
       for (x,y) in self.board.fields:
         self.buttons[x,y].update()
-        self.reset()
-        return 'won'
+      self.reset()
+      return 'won'
 
     elif self.board.tied():
       self.reset()

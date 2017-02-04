@@ -76,8 +76,12 @@ class GUI:
     self.board = Board()
     self.font = Font(family="Helvetica", size=32)
     self.buttons = {}
+    self.myturn = False
+    self.player_sym = 'X'
+    self.match_over = False
+
     for x,y in self.board.fields:
-      handler = lambda x=x,y=y: self.move(x,y)
+      handler = lambda x=x,y=y: self.player_move(x,y)
       button = Button(self.app, command=handler, font=self.font, width=2, height=1)
       button.grid(row=x, column=y)
       self.buttons[x,y] = button
@@ -96,6 +100,21 @@ class GUI:
     self.board.move(turn,x,y)
     res = self.update(turn)
     return res
+
+  def player_move(self,x,y):
+    if self.myturn == True:
+      res = self.move(self.player_sym,x,y)
+      if res is not 'done':
+        if res is 'won':
+          print "%s WON\n" % (self.player_sym)
+        else:
+          print "Match TIED\n"
+        self.match_over = True
+        sleep(0.5)
+        self.reset()
+        	
+      self.myturn = False
+    return
 
   def update(self, turn):
     for (x,y) in self.board.fields:

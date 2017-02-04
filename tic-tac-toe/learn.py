@@ -1,5 +1,6 @@
 from World import *
 import ast
+import sys
 
 MAX_LPLAYS = 50000
 class Player:
@@ -203,22 +204,67 @@ def calc_move(g, P1, P2):
 	fout.close()
 
 
+def enjoy_game(g, Q1, Q2):
+	more = True
 
-def calc2_move(g):
-	turn = 'X'
-	for j in actions:
-		x = j/3
-		y = j%3
-		g.move(turn, x, y)
-		sleep(0.5)
-		if turn is 'X':
-			turn = '0'
+	while more:
+		print "Enter 1 to play 1st or 2 for 2nd or enter to quit\n"
+		d = int(raw_input())
+		if d == 1:
+			P = Player(1)
+			g.myturn = True
+			g.player_sym = 'X'
+			C = Player(2)
+			C.initialize_train()
+			C.Q = Q2
+			g.myturn = True
+		elif d == 2:
+			P = Player(2)
+			g.myturn = False
+			g.player_sym = '0'
+			C = Player(1)
+			C.initialize_train()
+			C.Q = Q1
 		else:
-			turn = 'X'
+			print "EXIT\n"
+			sys.exit()
+		
+		while True:
+			if g.myturn == False:
+				if g.match_over == True:
+					g.match_over = False
+					break;
+				print "Computer Turn\n"
+				s1 = get_state(g.board)
+				act, val = C.max_Q(s1, g.board)
+				x = act/3
+				y = act%3
+				res = g.move(C.sym, x, y)
+				if res is 'won':
+					print "%s WON\n" % (C.sym)
+					break
+				elif res is 'tied':
+					print "Match TIED\n"
+					break
+				else:
+					g.myturn = True
 
 def play():
-  print "Play\n"
+  print "Play"
+  print "LOADING Q-MATRIX ...."
+  with open('Q2-mat','r') as inf:
+    Q2 = ast.literal_eval(inf.read())
+  inf.close()
+  with open('Q1-mat','r') as inf:
+    Q1 = ast.literal_eval(inf.read())
+  inf.close()
+
   g = GUI('play')
+
+  t1 = threading.Thread(target=enjoy_game, args=(g, Q1, Q2, ))
+  t1.daemon = True
+  t1.start()
+
   g.mainloop()
 
 def take_input():
@@ -261,7 +307,7 @@ def train():
 if __name__ == '__main__':
 
   print "Enter 't' to train & 'r' to play"
-  ch = str(raw_input('-->\n'))
+  ch = str(raw_input('-->'))
   if ch == 't':
     train()
     print "Model Trained\n"

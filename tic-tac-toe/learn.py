@@ -1,8 +1,9 @@
 from World import *
 import ast
 import sys
+import random
 
-MAX_LPLAYS = 50000
+MAX_LPLAYS = 100000
 class Player:
 	def __init__(self, P):
 		self.id = P
@@ -41,10 +42,20 @@ class Player:
 			self.actions.append(j)
 		for k in self.states:
 			for l in self.actions:
-				self.Q[k,l] = 10.0
+				self.Q[k,l] = 1.0
 
-	def max_Q(self,s, b):
+	def max_Q(self,epsilon,s, b):
 		act, val = (None, None)
+		r_num = random.random()
+
+		if r_num < epsilon:
+			while True:
+				act = random.randint(0,8)
+				x = act/3
+				y = act%3
+				if b.fields[x,y] is '.':
+					val = self.Q[s,act]
+					return act,val
 		for j in self.actions:
 			x = j/3
 			y = j%3
@@ -81,14 +92,17 @@ slow_down = True
 def calc_move(g, P1, P2):
 	global slow_down
 	alpha = 0.7
-	discount = 0.2
+	discount = 0.5
 
 	P = P1
 	reverse = 1
 	plays = 0
+	epsilon = 1
+	random.seed()
+
 	while plays < MAX_LPLAYS:
 		s1 = get_state(g.board)
-		act, val = P.max_Q(s1, g.board)
+		act, val = P.max_Q(epsilon, s1, g.board)
 		s2 = P.next_state(s1, act) #if next state is won or tied, nothing to do with s2
 		x = act/3
 		y = act%3
@@ -116,12 +130,15 @@ def calc_move(g, P1, P2):
 
 			if (plays % 700) == 0:
 				print "plays" , plays
-				if discount < 1:
+				if discount < 0.9:
 					discount += 0.01
 
 
 			if slow_down == True:
-				print "iter %d,discount %f %s Match Tied, Score %f\n" % (plays, discount, P.sym, P.World_score)
+				print "epsilon %f iter %d,discount %f %s Match Tied, Score %f\n" % (epsilon,plays, discount, P.sym, P.World_score)
+				print "Q1 states", P1.Q[0,i]
+				print "Q2 state", P2.Q[0,i]
+
 			P1.reset()
 			P2.reset()
 			if (plays % 2) == 0:
@@ -133,6 +150,8 @@ def calc_move(g, P1, P2):
 					P = P1
 #			sleep(1)
 			plays += 1
+			if epsilon > 0.02:
+				epsilon *= 0.99996
 
 		elif res is 'won':
 			r = 0.5
@@ -153,21 +172,21 @@ def calc_move(g, P1, P2):
 					P = P2
 				else:
 					P = P1
+
 				future_val = -1.0
 				r = 0
 				m += 1
+
+
 			if (plays % 700) == 0:
 				print "plays" , plays
-				if discount < 1:
+				if discount < 0.9:
 					discount += 0.01
 
 			if slow_down == True:
-				print "iter %d, %s Match Won, Score %f discount %f\n" % (plays, P.sym, P.World_score, discount)
-				for i in P1.actions:
-					print P1.Q[0,i]
-
-				for i in P2.actions:
-					print P2.Q[0,i]
+				print "epsilon %f  iter %d, %s Match Won, Score %f discount %f\n" % (epsilon, plays, P.sym, P.World_score, discount)
+				print "Q1 states", P1.Q[0,i]
+				print "Q2 state", P2.Q[0,i]
 		
 			P1.reset()
 			P2.reset()
@@ -181,7 +200,8 @@ def calc_move(g, P1, P2):
 					P = P1
 #			sleep(0.5)
 			plays += 1
-			
+			if epsilon > 0.02:
+				epsilon *= 0.99996
 
 		else:
 			if P is P1:
@@ -209,7 +229,12 @@ def enjoy_game(g, Q1, Q2):
 
 	while more:
 		print "Enter 1 to play 1st or 2 for 2nd or enter to quit\n"
-		d = int(raw_input())
+		try:
+			d = int(raw_input())
+		except ValueError:
+			print "EXIT"
+			sys.exit()
+
 		if d == 1:
 			P = Player(1)
 			g.myturn = True
@@ -236,7 +261,7 @@ def enjoy_game(g, Q1, Q2):
 					break;
 				print "Computer Turn\n"
 				s1 = get_state(g.board)
-				act, val = C.max_Q(s1, g.board)
+				act, val = C.max_Q(epsilon, s1, g.board)
 				x = act/3
 				y = act%3
 				res = g.move(C.sym, x, y)
